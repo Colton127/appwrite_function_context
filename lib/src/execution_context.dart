@@ -92,39 +92,39 @@ class ExecutionRequest {
 }
 
 class ExecutionResponse {
-  final dynamic res;
-  const ExecutionResponse._(this.res);
+  final dynamic _res;
+  const ExecutionResponse._(this._res);
 
   dynamic empty() {
-    return res.empty();
+    return _res.empty();
   }
 
   dynamic json(final Map<String, dynamic> json) {
-    return res.json(json);
+    return _res.json(json);
   }
 
   dynamic binary(Uint8List content) {
-    return res.binary(content);
+    return _res.binary(content);
   }
 
   dynamic redirect(String url) {
-    return res.redirect(url, 301);
+    return _res.redirect(url, 301);
   }
 
   dynamic html(String html) {
-    return res.text(html, 200, {'content-type': 'text/html'});
+    return _res.text(html, 200, {'content-type': 'text/html'});
   }
 
   dynamic text(String text) {
-    return res.text(text);
+    return _res.text(text);
   }
 
   dynamic success([String message = '']) {
-    return res.text(message, 200);
+    return _res.text(message, 200);
   }
 
   dynamic error([String message = '']) {
-    return res.text(message, 500);
+    return _res.text(message, 500);
   }
 }
 
@@ -144,31 +144,31 @@ class ExecutionHeaders {
 
   /// The dynamic API key used for server authentication.
   /// https://appwrite.io/docs/products/functions/develop#dynamic-api-key
-  String? get key => headers['x-appwrite-key'] as String?;
+  String? get key => headers['x-appwrite-key'];
 
   /// If the function execution was invoked by an authenticated user, this is the user's ID.
   ///
   /// This will be `null` for executions triggered by the Appwrite Console or API keys.
-  String? get userId => headers['x-appwrite-user-id'] as String?;
+  String? get userId => headers['x-appwrite-user-id'];
 
   /// The JWT token generated from the invoking user's session.
   ///
   /// This is used to authenticate Server SDKs to respect user access permissions.
-  String? get userJwt => headers['x-appwrite-user-jwt'] as String?;
+  String? get userJwt => headers['x-appwrite-user-jwt'];
 
   /// The country code of the configured locale.
-  String? get countryCode => headers['x-appwrite-country-code'] as String?;
+  String? get countryCode => headers['x-appwrite-country-code'];
 
   /// The continent code of the configured locale.
-  String? get continentCode => headers['x-appwrite-continent-code'] as String?;
+  String? get continentCode => headers['x-appwrite-continent-code'];
 
   /// Describes if the configured locale is within the EU.
   ///
   /// The value will be a string, such as 'true' or 'false'.
-  String? get continentEu => headers['x-appwrite-continent-eu'] as String?;
+  String? get continentEu => headers['x-appwrite-continent-eu'];
 
   /// The IP address of the client that triggered the execution.
-  String? get clientIp => headers['x-appwrite-client-ip'] as String?;
+  String? get clientIp => headers['x-appwrite-client-ip'];
 
   /// The unique ID of the current function execution.
   String get executionId => headers['x-appwrite-execution-id'];
