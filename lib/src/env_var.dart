@@ -34,11 +34,13 @@ abstract class EnvVar {
 
   /// The name of the function's runtime (e.g., 'dart-3.0').
   /// Available at Build and Run Time.
-  static String get runtimeName => parseString('APPWRITE_FUNCTION_RUNTIME_NAME');
+  static String get runtimeName =>
+      parseString('APPWRITE_FUNCTION_RUNTIME_NAME');
 
   /// The version of the function's runtime.
   /// Available at Build and Run Time.
-  static String get runtimeVersion => parseString('APPWRITE_FUNCTION_RUNTIME_VERSION');
+  static String get runtimeVersion =>
+      parseString('APPWRITE_FUNCTION_RUNTIME_VERSION');
 
   /// Parses a string value from the environment variables by its [key].
   ///
@@ -59,7 +61,8 @@ abstract class EnvVar {
       case 'false' || "0":
         return false;
       default:
-        throw ArgumentError('parseBool: Key $key with value $val is not a valid boolean');
+        throw ArgumentError(
+            'parseBool: Key $key with value $val is not a valid boolean');
     }
   }
 
@@ -68,7 +71,8 @@ abstract class EnvVar {
     try {
       return int.parse(val);
     } catch (e) {
-      throw ArgumentError('parseInt: Key $key with value $val is not a valid integer');
+      throw ArgumentError(
+          'parseInt: Key $key with value $val is not a valid integer');
     }
   }
 
@@ -77,7 +81,8 @@ abstract class EnvVar {
     try {
       return double.parse(val);
     } catch (e) {
-      throw ArgumentError('parseDouble: Key $key with value $val is not a valid double');
+      throw ArgumentError(
+          'parseDouble: Key $key with value $val is not a valid double');
     }
   }
 }

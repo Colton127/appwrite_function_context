@@ -11,7 +11,10 @@ Future<dynamic> main(final context) async {
 
   // You can use the Appwrite SDK to interact with other services
   // For this example, we're using the Users service
-  final client = Client().setEndpoint(EnvVar.endPoint).setProject(EnvVar.projectId).setKey(exeContext.headers.key ?? '');
+  final client = Client()
+      .setEndpoint(EnvVar.endPoint)
+      .setProject(EnvVar.projectId)
+      .setKey(exeContext.headers.key ?? '');
   final users = Users(client);
 
   try {
