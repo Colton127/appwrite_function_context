@@ -14,7 +14,7 @@ Future<dynamic> main(final context) async {
   final client = Client()
       .setEndpoint(EnvVar.endPoint)
       .setProject(EnvVar.projectId)
-      .setKey(exeContext.headers.key ?? '');
+      .setKey(exeContext.headers.key!);
   final users = Users(client);
 
   try {

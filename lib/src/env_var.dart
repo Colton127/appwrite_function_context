@@ -5,40 +5,34 @@ abstract class EnvVar {
   static String get endPoint => parseString('APPWRITE_FUNCTION_API_ENDPOINT');
 
   /// The Appwrite version being used to run the function.
-  /// Available at Build and Run Time.
   static String get appwriteVersion => parseString('APPWRITE_VERSION');
 
   /// The region where the function is running.
-  /// Available at Build and Run Time.
   static String get region => parseString('APPWRITE_REGION');
 
-  /// The function's API key, used for server authentication.
-  /// Available at Build Time.
-  static String get apiKey => parseString('APPWRITE_FUNCTION_API_KEY');
+  /// The function's API key, used for server authentication. Only available at Build Time.
+  ///
+  /// To access the dynamic API key at Runtime, use `ctx.headers.key`.
+  static String? get apiKey =>
+      Platform.environment['APPWRITE_FUNCTION_API_KEY'];
 
   /// The unique ID of the running function.
-  /// Available at Build and Run Time.
   static String get functionId => parseString('APPWRITE_FUNCTION_ID');
 
   /// The name of the running function.
-  /// Available at Build and Run Time.
   static String get functionName => parseString('APPWRITE_FUNCTION_NAME');
 
   /// The deployment ID for the current execution of the function.
-  /// Available at Build and Run Time.
   static String get deploymentId => parseString('APPWRITE_FUNCTION_DEPLOYMENT');
 
   /// The project ID that the function belongs to.
-  /// Available at Build and Run Time.
   static String get projectId => parseString('APPWRITE_FUNCTION_PROJECT_ID');
 
   /// The name of the function's runtime (e.g., 'dart-3.0').
-  /// Available at Build and Run Time.
   static String get runtimeName =>
       parseString('APPWRITE_FUNCTION_RUNTIME_NAME');
 
   /// The version of the function's runtime.
-  /// Available at Build and Run Time.
   static String get runtimeVersion =>
       parseString('APPWRITE_FUNCTION_RUNTIME_VERSION');
 
@@ -61,7 +55,7 @@ abstract class EnvVar {
       case 'false' || "0":
         return false;
       default:
-        throw ArgumentError(
+        throw FormatException(
             'parseBool: Key $key with value $val is not a valid boolean');
     }
   }
@@ -71,7 +65,7 @@ abstract class EnvVar {
     try {
       return int.parse(val);
     } catch (e) {
-      throw ArgumentError(
+      throw FormatException(
           'parseInt: Key $key with value $val is not a valid integer');
     }
   }
@@ -81,7 +75,7 @@ abstract class EnvVar {
     try {
       return double.parse(val);
     } catch (e) {
-      throw ArgumentError(
+      throw FormatException(
           'parseDouble: Key $key with value $val is not a valid double');
     }
   }

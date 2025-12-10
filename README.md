@@ -1,13 +1,22 @@
 # Appwrite Function Context
 
-A Dart wrapper library for Appwrite Functions that provides type safety and a better developer experience when working with Appwrite serverless functions.
+A Dart wrapper library for Appwrite Functions that provides type safety and a better developer experience when working with dart_appwrite Functions.
 
 ## Features
 
 - Type-safe access to Appwrite function execution context
 - Convenient access to request data, headers, and query parameters
 - Simplified response creation (JSON, HTML, text, binary)
-- Helper methods for environment variables
+- Helper methods for environment variables and parsing
+
+## Installation
+
+Add this package to your functions `pubspec.yaml`:
+
+```yaml
+dependencies:
+  appwrite_function_context: ^1.0.1
+```
 
 ## Usage
 
@@ -35,168 +44,138 @@ void main(context) {
 
 Provides access to environment variables available in Appwrite Functions:
 
-| Variable | Description | Available At |
-|----------|-------------|--------------|
-| `EnvVar.appwriteEndpoint` | The Appwrite API endpoint | Runtime |
-| `EnvVar.appwriteFunction` | The ID of the current function | Runtime |
-| `EnvVar.appwriteFunctionId` | The ID of the current function | Runtime |
-| `EnvVar.appwriteFunctionName` | The name of the current function | Runtime |
-| `EnvVar.appwriteFunctionDeploymentId` | The ID of the current function deployment | Runtime |
-| `EnvVar.appwriteFunctionTrigger` | The function trigger type | Runtime |
-| `EnvVar.appwriteFunctionProject` | The project ID | Runtime |
-| `EnvVar.appwriteFunctionProjectId` | The project ID | Runtime |
-| `EnvVar.appwriteFunctionJwt` | The JWT for accessing Appwrite APIs | Runtime |
-| `EnvVar.appwriteFunctionUserAgent` | The user agent string for SDK identification | Runtime |
+| Variable | Description |
+|----------|-------------|
+| `EnvVar.endPoint` | Appwrite API endpoint |
+| `EnvVar.appwriteVersion` | Appwrite version running the function |
+| `EnvVar.region` | Region where the function is running |
+| `EnvVar.apiKey` | Function/API key for server authentication |
+| `EnvVar.functionId` | Unique ID of the running function |
+| `EnvVar.functionName` | Name of the running function |
+| `EnvVar.deploymentId` | Deployment ID for the current function execution |
+| `EnvVar.projectId` | Appwrite project ID the function belongs to |
+| `EnvVar.runtimeName` | Runtime name (e.g., 'dart-3.0') |
+| `EnvVar.runtimeVersion` | Runtime version of the function |
 
-Access an environment variable:
 
-```dart
-final endpoint = EnvVar.appwriteEndpoint;
-```
+EnvVar exposes helpers to manually parse environment variables:
 
-### ExecutionContext
+  - `EnvVar.parseString(String key)` 
+  - `EnvVar.parseBool(String key)` 
+  - `EnvVar.parseInt(String key)`
+  - `EnvVar.parseDouble(String key)`
 
-Main wrapper around the raw Appwrite function context.
-
-```dart
-// Create from raw context object passed to your function
-final ctx = ExecutionContext(context);
-```
-
-Properties:
-- `req` - Access the request details
-- `res` - Create and send responses
-- `headers` - Access request headers
-
-Methods:
-- `log(String message)` - Log an informational message
-- `error(String message)` - Log an error message
-
-### ExecutionRequest
-
-Access information about the incoming request through `ctx.req`:
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `bodyText` | `String` | Raw request body as string |
-| `bodyJson` | `dynamic` | Parsed JSON request body |
-| `bodyBinary` | `List<int>` | Raw binary request body |
-| `headers` | `Map<String, dynamic>` | All request headers |
-| `scheme` | `String` | Request scheme (http/https) |
-| `method` | `String` | HTTP method (GET, POST, etc.) |
-| `url` | `String` | Full URL of the request |
-| `host` | `String` | Hostname from the 'host' header |
-| `port` | `int` | Port from the 'host' header |
-| `path` | `String` | URL path |
-| `queryString` | `String` | Raw query parameters string |
-| `query` | `Map<String, dynamic>` | Parsed query parameters |
 
 Examples:
 
 ```dart
-// Check request method
+// Preferred: use typed EnvVar accessors
+final endpoint = EnvVar.endPoint;
+final projectId = EnvVar.projectId;
+
+// Manual parsing for custom environment variables:
+final isFeatureEnabled = EnvVar.parseBool('MY_FEATURE_FLAG');
+final maxConnections = EnvVar.parseInt('MY_MAX_CONN');
+final timeout = EnvVar.parseDouble('MY_TIMEOUT_SECS');
+final customString = EnvVar.parseString('MY_CUSTOM_VALUE');
+```
+
+### ExecutionContext
+
+ExecutionContext wraps the raw function context and provides typed access to:
+
+- `req` — the `ExecutionRequest` containing the request data (body, headers, query).
+- `res` — the `ExecutionResponse` helper for creating responses.
+- `headers` — the `RequestHeaders` abstraction for request headers.
+- Logging:
+  - `log(String message)` — write an informational message to function logs.
+  - `error(String message)` — write an error message to function logs.
+
+Create an `ExecutionContext` from the raw context object passed to your function:
+
+```dart
+final ctx = ExecutionContext(context);
+```
+
+### ExecutionRequest
+
+Access details about the incoming request using `ctx.req`:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `bodyText` | `String` | Raw request body as a string. |
+| `bodyJson` | `dynamic` | Parsed JSON body (object or primitive) if valid JSON. |
+| `bodyBinary` | `List<int>` | Raw binary body bytes. |
+| `headers` | `Map<String, dynamic>` | All request headers (lowercased keys). |
+| `scheme` | `String` | Request scheme, e.g., 'http' or 'https'. |
+| `method` | `String` | HTTP method, e.g., 'GET', 'POST'. |
+| `url` | `String` | Full request URL. |
+| `host` | `String` | Hostname from the 'host' header. |
+| `port` | `int` | Port parsed from 'host' header. |
+| `path` | `String` | The path part of the URL. |
+| `queryString` | `String` | Raw query string, e.g., `a=1&b=2`. |
+| `query` | `Map<String, dynamic>` | Parsed query parameters. |
+
+Examples:
+
+```dart
 if (ctx.req.method == 'POST') {
-  // Handle POST request
+  final data = ctx.req.bodyJson;
+  // process JSON
 }
 
-// Access JSON body
-final data = ctx.req.bodyJson;
-final username = data['username'];
-
-// Access query parameters
 final limit = ctx.req.query['limit'];
+final raw = ctx.req.bodyText;
 ```
 
 ### ExecutionResponse
 
-Create and send responses through `ctx.res`:
+`ctx.res` provides helper methods to send responses. These methods accept optional status codes.
 
-| Method | Description | Example |
-|--------|-------------|---------|
-| `empty()` | Send an empty response | `return ctx.res.empty();` |
-| `json(Map<String, dynamic>)` | Send a JSON response | `return ctx.res.json({'status': 'success'});` |
-| `binary(Uint8List)` | Send binary data | `return ctx.res.binary(fileBytes);` |
-| `redirect(String)` | Redirect to URL | `return ctx.res.redirect('https://example.com');` |
-| `html(String)` | Send HTML content | `return ctx.res.html('<h1>Hello</h1>');` |
-| `text(String)` | Send plain text | `return ctx.res.text('Hello world');` |
-| `success([String])` | Send success (200) | `return ctx.res.success('Operation completed');` |
-| `error([String])` | Send error (500) | `return ctx.res.error('Something went wrong');` |
+Methods:
+- `empty()` 
+- `json(Map<String, dynamic> json, [int statusCode = 200])`
+- `binary(Uint8List content, [int statusCode = 200])`
+- `redirect(String url, [int statusCode = 301])`
+- `html(String html, [int statusCode = 200])`
+- `text(String text, [int statusCode = 200])`
+- `success({String message = '', int statusCode = 200})`
+- `error({String message = '', int statusCode = 500})`
 
-### ExecutionHeaders
-
-Access request headers through `ctx.headers`:
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `trigger` | `String` | How function was invoked (http, schedule, event) |
-| `event` | `dynamic` | Event data if triggered by an event |
-| `key` | `String?` | Dynamic API key used for authentication |
-| `userId` | `String?` | ID of authenticated user who triggered execution |
-| `userJwt` | `String?` | JWT token from invoking user's session |
-| `countryCode` | `String?` | Country code of configured locale |
-| `continentCode` | `String?` | Continent code of configured locale |
-| `continentEu` | `String?` | Whether locale is within EU ('true'/'false') |
-| `clientIp` | `String?` | IP address of client that triggered execution |
-| `executionId` | `String` | Unique ID of current function execution |
-
-You can also access any header using the index operator:
+Examples:
 
 ```dart
-// Access a custom header
-final customHeader = ctx.headers['x-custom-header'];
-
-// Check execution trigger type
-if (ctx.headers.trigger == 'event') {
-  final eventData = ctx.headers.event;
-}
-
-// Get user ID if authenticated
-final userId = ctx.headers.userId;
+return ctx.res.json({'ok': 'true'});
+return ctx.res.json({'ok': 'false'}, 500);
+return ctx.res.text('Not Found', 404);
+return ctx.res.redirect('https://example.com');
+return ctx.res.empty();
 ```
 
-## Example
+### RequestHeaders
 
-Here's a complete example of using the package in an Appwrite function:
+Use `ctx.headers` to access request headers.
+
+Getters exposed:
+- `trigger` — how the function was executed (`http`, `schedule`, `event`).
+- `event` — event data if invoked by an event trigger.
+- `key` — optional dynamic API key used for authentication.
+- `userId` — user ID for authenticated executions (when applicable).
+- `userJwt` — JWT token from the invoking user's session (when applicable).
+- `countryCode` — client country code (when available).
+- `continentCode` — client continent code (when available).
+- `continentEu` — whether the region is within the EU as `'true'`/`'false'`.
+- `clientIp` — client IP address.
+- `executionId` — unique ID for the current function execution.
+
+Type-safe assertion:
+- `RequestHeaders.requireValue<T>(key)` validates type and presence — throws if missing or type mismatch.
+
+Example:
 
 ```dart
-import 'package:appwrite_function_context/appwrite_function_context.dart';
-import 'package:dart_appwrite/dart_appwrite.dart';
+final userId = ctx.headers.userId;
+final trigger = ctx.headers.trigger;
 
-void main(final context) {
-  // Wrap the context for type safety and better developer experience
-  final ctx = ExecutionContext(context);
-
-  ctx.log('Function executing...');
-
-  try {
-    // Get execution trigger type
-    final triggerType = ctx.headers.trigger;
-    ctx.log('Trigger type: $triggerType');
-
-    // Initialize Appwrite SDK using environment variables
-    final client = Client()
-        .setEndpoint(EnvVar.appwriteEndpoint)
-        .setProject(EnvVar.appwriteFunctionProject)
-        .setKey(EnvVar.appwriteFunctionApiKey);
-
-    // Access request data
-    if (ctx.req.method == 'POST') {
-      final data = ctx.req.bodyJson;
-      ctx.log('Received data: $data');
-      
-      // Process data and return response
-      return ctx.res.json({
-        'success': true,
-        'message': 'Data processed successfully',
-        'data': data
-      });
-    } else {
-      // Return simple text for other methods
-      return ctx.res.text('Send a POST request with JSON data');
-    }
-  } catch (e) {
-    ctx.error('Error: $e');
-    return ctx.res.error('An error occurred during execution');
-  }
-}
+final apiKey = ctx.headers.requireValue<String>('x-appwrite-key');
 ```
