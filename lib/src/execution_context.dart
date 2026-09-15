@@ -142,8 +142,8 @@ class ExecutionResponse {
     Map<String, dynamic> headers = const {},
   ]) {
     return text(html, statusCode, {
-      ...headers,
       'content-type': 'text/html',
+      ...headers,
     });
   }
 
