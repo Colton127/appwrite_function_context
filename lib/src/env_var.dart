@@ -1,5 +1,7 @@
 import 'dart:io';
 
+/// Full documentation:
+/// https://appwrite.io/docs/products/functions/environment-variables
 abstract class EnvVar {
   ///The API endpoint of the running function
   static String get endPoint => parseString('APPWRITE_FUNCTION_API_ENDPOINT');
@@ -9,6 +11,12 @@ abstract class EnvVar {
 
   /// The region where the function is running.
   static String get region => parseString('APPWRITE_REGION');
+
+  /// The deployment source type, such as `manual`, `cli`, or `vcs`.
+  ///
+  /// Kept as a [String], rather than an enum, so future deployment types
+  /// don't break at runtime.
+  static String get deploymentType => parseString('APPWRITE_DEPLOYMENT_TYPE');
 
   /// The function's API key, used for server authentication. Only available at Build Time.
   ///
@@ -36,9 +44,90 @@ abstract class EnvVar {
   static String get runtimeVersion =>
       parseString('APPWRITE_FUNCTION_RUNTIME_VERSION');
 
+  /// The number of CPUs allocated to the running function.
+  ///
+  /// This may be fractional (Appwrite's default spec is `0.5`), so it is
+  /// parsed as a [double] rather than an [int].
+  static double get cpus => parseDouble('APPWRITE_FUNCTION_CPUS');
+
+  /// The amount of memory, in megabytes, allocated to the running function.
+  static int get memory => parseInt('APPWRITE_FUNCTION_MEMORY');
+
+  /// The VCS provider's repository ID, for Git deployments.
+  ///
+  /// `null` for manual or CLI deployments.
+  static String? get vcsRepositoryId =>
+      parseOptionalString('APPWRITE_VCS_REPOSITORY_ID');
+
+  /// The VCS provider's repository name, for Git deployments.
+  ///
+  /// `null` for manual or CLI deployments.
+  static String? get vcsRepositoryName =>
+      parseOptionalString('APPWRITE_VCS_REPOSITORY_NAME');
+
+  /// The owner of the VCS provider's repository, for Git deployments.
+  ///
+  /// `null` for manual or CLI deployments.
+  static String? get vcsRepositoryOwner =>
+      parseOptionalString('APPWRITE_VCS_REPOSITORY_OWNER');
+
+  /// The URL of the VCS provider's repository, for Git deployments.
+  ///
+  /// `null` for manual or CLI deployments.
+  static String? get vcsRepositoryUrl =>
+      parseOptionalString('APPWRITE_VCS_REPOSITORY_URL');
+
+  /// The branch used for the VCS deployment.
+  ///
+  /// `null` for manual or CLI deployments.
+  static String? get vcsRepositoryBranch =>
+      parseOptionalString('APPWRITE_VCS_REPOSITORY_BRANCH');
+
+  /// The URL of the branch used for the VCS deployment.
+  ///
+  /// `null` for manual or CLI deployments.
+  static String? get vcsRepositoryBranchUrl =>
+      parseOptionalString('APPWRITE_VCS_REPOSITORY_BRANCH_URL');
+
+  /// The commit hash used for the VCS deployment.
+  ///
+  /// `null` for manual or CLI deployments.
+  static String? get vcsCommitHash =>
+      parseOptionalString('APPWRITE_VCS_COMMIT_HASH');
+
+  /// The commit message used for the VCS deployment.
+  ///
+  /// `null` for manual or CLI deployments.
+  static String? get vcsCommitMessage =>
+      parseOptionalString('APPWRITE_VCS_COMMIT_MESSAGE');
+
+  /// The URL of the commit used for the VCS deployment.
+  ///
+  /// `null` for manual or CLI deployments.
+  static String? get vcsCommitUrl =>
+      parseOptionalString('APPWRITE_VCS_COMMIT_URL');
+
+  /// The name of the VCS commit author.
+  ///
+  /// `null` for manual or CLI deployments.
+  static String? get vcsCommitAuthorName =>
+      parseOptionalString('APPWRITE_VCS_COMMIT_AUTHOR_NAME');
+
+  /// The URL of the VCS commit author.
+  ///
+  /// `null` for manual or CLI deployments.
+  static String? get vcsCommitAuthorUrl =>
+      parseOptionalString('APPWRITE_VCS_COMMIT_AUTHOR_URL');
+
+  /// The root directory configured for the VCS deployment.
+  ///
+  /// `null` for manual or CLI deployments.
+  static String? get vcsRootDirectory =>
+      parseOptionalString('APPWRITE_VCS_ROOT_DIRECTORY');
+
   /// Parses a string value from the environment variables by its [key].
   ///
-  /// Throws an [Exception] if the environment variable is not found.
+  /// Throws an [Exception] if the environment variable is not set.
   static String parseString(String key) {
     final String? value = Platform.environment[key];
     if (value == null) {
@@ -47,36 +136,81 @@ abstract class EnvVar {
     return value;
   }
 
-  static bool parseBool(final String key) {
-    final val = parseString(key).toLowerCase();
-    switch (val) {
-      case 'true' || "1":
+  /// Reads the environment variable by its [key], returning `null` if it is
+  /// unset or empty rather than throwing.
+  ///
+  /// Useful for optional metadata, such as VCS variables, that Appwrite does
+  /// not guarantee for every deployment.
+  static String? parseOptionalString(String key) {
+    final String? value = Platform.environment[key];
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+    return value;
+  }
+
+  /// Parses a boolean value from the environment variables by its [key].
+  ///
+  /// Throws an [Exception] if the environment variable is not set, or a
+  /// [FormatException] if its value is not a valid boolean.
+  static bool parseBool(String key) => parseBoolValue(key, parseString(key));
+
+  /// Parses a boolean from a raw [value], attributing errors to [key].
+  ///
+  /// Extracted from [parseBool] so the parsing logic can be unit tested
+  /// without needing to set real process environment variables.
+  static bool parseBoolValue(String key, String value) {
+    final String normalized = value.toLowerCase();
+    switch (normalized) {
+      case 'true' || '1':
         return true;
-      case 'false' || "0":
+      case 'false' || '0':
         return false;
       default:
         throw FormatException(
-            'parseBool: Key $key with value $val is not a valid boolean');
+          'parseBool: Key $key with value $normalized is not a valid boolean',
+        );
     }
   }
 
-  static int parseInt(final String key) {
-    final val = parseString(key);
-    try {
-      return int.parse(val);
-    } catch (e) {
+  /// Parses an integer value from the environment variables by its [key].
+  ///
+  /// Throws an [Exception] if the environment variable is not set, or a
+  /// [FormatException] if its value is not a valid integer.
+  static int parseInt(String key) => parseIntValue(key, parseString(key));
+
+  /// Parses an integer from a raw [value], attributing errors to [key].
+  ///
+  /// Extracted from [parseInt] so the parsing logic can be unit tested
+  /// without needing to set real process environment variables.
+  static int parseIntValue(String key, String value) {
+    final int? parsed = int.tryParse(value);
+    if (parsed == null) {
       throw FormatException(
-          'parseInt: Key $key with value $val is not a valid integer');
+        'parseInt: Key $key with value $value is not a valid integer',
+      );
     }
+    return parsed;
   }
 
-  static double parseDouble(final String key) {
-    final val = parseString(key);
-    try {
-      return double.parse(val);
-    } catch (e) {
+  /// Parses a double value from the environment variables by its [key].
+  ///
+  /// Throws an [Exception] if the environment variable is not set, or a
+  /// [FormatException] if its value is not a valid double.
+  static double parseDouble(String key) =>
+      parseDoubleValue(key, parseString(key));
+
+  /// Parses a double from a raw [value], attributing errors to [key].
+  ///
+  /// Extracted from [parseDouble] so the parsing logic can be unit tested
+  /// without needing to set real process environment variables.
+  static double parseDoubleValue(String key, String value) {
+    final double? parsed = double.tryParse(value);
+    if (parsed == null) {
       throw FormatException(
-          'parseDouble: Key $key with value $val is not a valid double');
+        'parseDouble: Key $key with value $value is not a valid double',
+      );
     }
+    return parsed;
   }
 }

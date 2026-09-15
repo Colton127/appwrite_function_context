@@ -1,6 +1,6 @@
 name: appwrite_function_context
 description: A wrapper around the Appwrite Function Context.
-version: 1.0.1
+version: 1.1.0
 homepage: https://github.com/Colton127/appwrite_function_context
 
 environment:
@@ -9,3 +9,5 @@ environment:
 dependencies:
 
 dev_dependencies:
+  lints: ^6.1.0
+  test: ^1.32.0

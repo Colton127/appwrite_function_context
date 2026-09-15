@@ -1,11 +1,7 @@
-import 'dart:async';
-import 'dart:io';
-
-import 'package:appwrite_function_context/src/env_var.dart';
-import 'package:appwrite_function_context/src/execution_context.dart';
+import 'package:appwrite_function_context/appwrite_function_context.dart';
 import 'package:dart_appwrite/dart_appwrite.dart';
 
-Future<dynamic> main(final context) async {
+Future<dynamic> main(context) async {
   // Wrap the dynamic context in the strongly typed ExecutionContext
   final ExecutionContext exeContext = ExecutionContext(context);
 
@@ -21,22 +17,27 @@ Future<dynamic> main(final context) async {
     final response = await users.list();
     // Log messages and errors to the Appwrite Console
     // These logs won't be seen by your end users
-    exeContext.log('Total users: ' + response.total.toString());
+    exeContext.log('Total users: ${response.total}');
   } catch (e) {
-    exeContext.error('Could not list users: ' + e.toString());
+    exeContext.error('Could not list users: $e');
   }
 
   // The req object contains the request data
-  if (exeContext.req.path == "/ping") {
+  if (exeContext.req.path == '/ping') {
     // Use res object to respond with text(), json(), or binary()
     // Don't forget to return a response!
     return exeContext.res.text('Pong');
   }
 
-  return exeContext.res.json({
-    'motto': 'Build like a team of hundreds_',
-    'learn': 'https://appwrite.io/docs',
-    'connect': 'https://appwrite.io/discord',
-    'getInspired': 'https://builtwith.appwrite.io',
-  });
+  return exeContext.res.json(
+    {
+      'motto': 'Build like a team of hundreds_',
+      'learn': 'https://appwrite.io/docs',
+      'connect': 'https://appwrite.io/discord',
+      'getInspired': 'https://builtwith.appwrite.io',
+    },
+    200,
+    // Optional response headers are forwarded to the underlying runtime.
+    {'cache-control': 'no-store'},
+  );
 }
