@@ -1,0 +1,4 @@
+# The example is its own package (see pubspec.yaml) so it can depend on
+# dart_appwrite without adding that dependency to the published package.
+# It intentionally doesn't include package:lints, since dev_dependencies
+# aren't installed for it separately from the main package.

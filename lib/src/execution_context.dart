@@ -1,10 +1,6 @@
 ///Full documentation: https://appwrite.io/docs/products/functions/develop#request
 library;
 
-import 'dart:typed_data';
-
-// ignore_for_file: unused_local_variable
-
 ///Wrapper around context to provide type safety and better developer experience.
 ///Every execution has a unique context that contains the request and response objects.
 class ExecutionContext {
@@ -21,10 +17,14 @@ class ExecutionContext {
   RequestHeaders get headers => RequestHeaders._(_context.req.headers);
 
   /// Logs a message to the execution log.
-  void log(String message) => _context.log(message);
+  ///
+  /// Accepts any loggable value; it is forwarded to the runtime as-is.
+  void log(Object? message) => _context.log(message);
 
   /// Logs an error message to the execution log.
-  void error(String message) => _context.error(message);
+  ///
+  /// Accepts any loggable value; it is forwarded to the runtime as-is.
+  void error(Object? message) => _context.error(message);
 }
 
 /// A wrapper for the request object from the Appwrite function execution context (`context.req`).
@@ -41,7 +41,8 @@ class ExecutionRequest {
 
   /// The parsed JSON request body.
   ///
-  /// This will be an object if the request body was valid JSON, otherwise it will be a string.
+  /// Throws a [FormatException] if the body is not valid JSON. Check
+  /// [bodyText] first, or catch the exception, if the body may not be JSON.
   dynamic get bodyJson => _req.bodyJson;
 
   /// Returns the raw binary body of the request.
@@ -89,51 +90,91 @@ class ExecutionRequest {
   /// The parsed query parameters.
   ///
   /// For example, to access the 'limit' parameter from the URL `/v1/hooks?limit=12`, you would use `query['limit']`.
-  Map<String, dynamic> get query => _req.query;
+  Map<String, String> get query => _req.query;
 }
 
+/// A wrapper for the response object from the Appwrite function execution context (`context.res`).
+///
+/// This class provides convenient helpers for building HTTP responses.
 class ExecutionResponse {
   final dynamic _res;
   const ExecutionResponse._(this._res);
 
-  ///Sends a response with a code 204 No Content status.
+  /// Sends a response with a code 204 No Content status.
   dynamic empty() {
     return _res.empty();
   }
 
-  /// Converts the data into a JSON string and sets the content-type header to [application/json] with [statusCode].
-  dynamic json(final Map<String, dynamic> json, [int statusCode = 200]) {
-    return _res.json(json, statusCode);
+  /// Converts [json] into a JSON string and sets the content-type header to
+  /// `application/json` with [statusCode] and any additional [headers].
+  dynamic json(
+    Map<String, dynamic> json, [
+    int statusCode = 200,
+    Map<String, dynamic> headers = const {},
+  ]) {
+    return _res.json(json, statusCode, headers);
   }
 
-  ///Packages binary bytes, the status code, and the headers into an object with [statusCode].
-  dynamic binary(Uint8List content, [int statusCode = 200]) {
-    return _res.binary(content, statusCode);
+  /// Packages binary [bytes] into a response with [statusCode] and [headers].
+  dynamic binary(
+    List<int> bytes, [
+    int statusCode = 200,
+    Map<String, dynamic> headers = const {},
+  ]) {
+    return _res.binary(bytes, statusCode, headers);
   }
 
-  ///Redirects the client to the specified URL link with [statusCode].
-  dynamic redirect(String url, [int statusCode = 301]) {
-    return _res.redirect(url, statusCode);
+  /// Redirects the client to the specified [url] with [statusCode].
+  dynamic redirect(
+    String url, [
+    int statusCode = 301,
+    Map<String, dynamic> headers = const {},
+  ]) {
+    return _res.redirect(url, statusCode, headers);
   }
 
-  /// Sends an HTML response with the content-type header set to [text/html] with [statusCode].
-  dynamic html(String html, [int statusCode = 200]) {
-    return _res.text(html, statusCode, {'content-type': 'text/html'});
+  /// Sends an HTML response with the content-type header set to `text/html`
+  /// with [statusCode]. Any caller-provided [headers] are preserved, and
+  /// `content-type` is set unless already present.
+  dynamic html(
+    String html, [
+    int statusCode = 200,
+    Map<String, dynamic> headers = const {},
+  ]) {
+    return text(html, statusCode, {
+      'content-type': 'text/html',
+      ...headers,
+    });
   }
 
-  ///Converts the body using UTF-8 encoding into a binary Buffer and sends it with [statusCode].
-  dynamic text(String text, [int statusCode = 200]) {
-    return _res.text(text, statusCode);
+  /// Converts [text] using UTF-8 encoding into a binary buffer and sends it
+  /// with [statusCode] and [headers].
+  dynamic text(
+    String text, [
+    int statusCode = 200,
+    Map<String, dynamic> headers = const {},
+  ]) {
+    return _res.text(text, statusCode, headers);
   }
 
-  /// Sends a success response with an optional message and [statusCode].
-  dynamic success({String message = '', int statusCode = 200}) {
-    return _res.text(message, statusCode);
+  /// Sends a success response with an optional [message], [statusCode], and
+  /// [headers].
+  dynamic success({
+    String message = '',
+    int statusCode = 200,
+    Map<String, dynamic> headers = const {},
+  }) {
+    return text(message, statusCode, headers);
   }
 
-  /// Sends an error response with an optional message and [statusCode].
-  dynamic error({String message = '', int statusCode = 500}) {
-    return _res.text(message, statusCode);
+  /// Sends an error response with an optional [message], [statusCode], and
+  /// [headers].
+  dynamic error({
+    String message = '',
+    int statusCode = 500,
+    Map<String, dynamic> headers = const {},
+  }) {
+    return text(message, statusCode, headers);
   }
 }
 
@@ -146,11 +187,13 @@ class RequestHeaders {
 
   /// Describes how the function execution was invoked.
   ///
-  /// Possible values are `http`, `schedule`, or `event`.
+  /// Possible values are `http`, `schedule`, or `event`. Kept as a [String],
+  /// rather than an enum, so future trigger types don't break at runtime.
   String get trigger => _headers['x-appwrite-trigger'];
 
-  /// If the function execution was triggered by an event, this describes the triggering event.
-  dynamic get event => _headers['x-appwrite-event'];
+  /// If the function execution was triggered by an event, this describes the
+  /// triggering event. `null` for other trigger types.
+  String? get event => _headers['x-appwrite-event'];
 
   /// The dynamic API key used for server authentication.
   /// https://appwrite.io/docs/products/functions/develop#dynamic-api-key
@@ -183,21 +226,29 @@ class RequestHeaders {
   /// The unique ID of the current function execution.
   String get executionId => _headers['x-appwrite-execution-id'];
 
+  /// Returns the header value for [key], asserting it is of type [T].
+  ///
+  /// Throws an [Exception] if the header is missing, or if it is present but
+  /// not of type [T].
   T requireValue<T>(String key) {
+    if (!_headers.containsKey(key)) {
+      throw Exception('Header "$key" is not present.');
+    }
     final value = _headers[key];
     if (value is! T) {
       throw Exception(
-          'Expected header "$key" to be of type $T but got ${value.runtimeType}');
+        'Expected header "$key" to be of type $T but got ${value.runtimeType}.',
+      );
     }
     return value;
   }
 
-  operator [](String key) => _headers[key];
+  Object? operator [](String key) => _headers[key];
   Iterable<String> get keys => _headers.keys;
-  Iterable<dynamic> get values => _headers.values;
-  Iterable<MapEntry<String, dynamic>> get entries => _headers.entries;
+  Iterable<Object?> get values => _headers.values;
+  Iterable<MapEntry<String, Object?>> get entries => _headers.entries;
   bool containsKey(String key) => _headers.containsKey(key);
   int get length => _headers.length;
-  forEach(void Function(String key, dynamic value) action) =>
+  void forEach(void Function(String key, Object? value) action) =>
       _headers.forEach(action);
 }

@@ -1,0 +1,11 @@
+name: appwrite_function_context_example
+description: Example usage of the appwrite_function_context package.
+publish_to: none
+
+environment:
+  sdk: ^3.0.0
+
+dependencies:
+  appwrite_function_context:
+    path: ../
+  dart_appwrite: ^29.0.0
